@@ -4,20 +4,29 @@ import { TextureLoader, RepeatWrapping, PerspectiveCamera } from "three";
 import kingImg from "../public/King.glb";
 import { useGLTF, Stage, useAnimations } from "@react-three/drei";
 
-// Wall width figures need to dynamic so that we don't need to hardcode in the wall width
 
 function Box({ cubePosition, jump }) {
+  // this part uses useRef to make an object of loads of data about the box, like its current position and stuff
   const mesh = useRef();
+  // this bit sets the box to start at the co-ordinates 0,0,0 when the window opens
   const [position, setPosition] = useState([0, 0, 0]);
 
+
+  // useFrame is whats used to animate things, it basically checks before loading every frame any of the conditional logic inside and makes the changes, the delta part i don't 100% get but it basically by multiplying any change by delta it makes sure that however slow or fast your computer is the animation is smooth
+
   useFrame((state, delta) => {
+    //this part is basically saying if the character is below a certain height let it jump, or if its over 0.7 on the y axis start pushing it down (its accessing the mesh object we made above to get its co-ordinates and then change them)
     if (mesh.current.position.y < .7){
     mesh.current.position.y += jump * delta}
     if (mesh.current.position.y >= .7){
       mesh.current.position.y -= 0.01 + (1*delta)}
+
+    //this one is what gets the character to stand on the ground, it basically pushes the character down until its at -0.5 on the Y axis
     if (mesh.current.position.y > -0.5) {
       mesh.current.position.y -= 0.01 + (1*delta);
     }
+
+    //the below is what is stopping it going too far left or right (it starts pushing the box's X axis back when it gets to -4.5 or 4.5)
     if (mesh.current.position.x < 4.5) {
       mesh.current.position.x += cubePosition * delta;
     }
@@ -35,8 +44,6 @@ function Box({ cubePosition, jump }) {
 
   return (
     <mesh ref={mesh} position={position}>
-      {/* <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="orange" roughness={1}/> */}
       <Character />
     </mesh>
   );
@@ -81,10 +88,14 @@ const Background = () => {
 const Ground = ({ moveSpeed }) => {
   const mesh = useRef();
 
+  //this useFrame is changing the z axis (forward and backwards) of the ground if moveSpeed has changed, which is set in App when you press the up or down arrow
+
   useFrame((state, delta) => {
     mesh.current.position.z += moveSpeed * delta;
   });
 
+
+  // this is making a texture of bricks thats added in as a prop to meshStandardMaterial on line 114
   const texture = new TextureLoader().load("/darkbrown.png");
   texture.wrapS = RepeatWrapping;
   texture.wrapT = RepeatWrapping;
@@ -104,6 +115,7 @@ const Ground = ({ moveSpeed }) => {
 
 const Wall = ({ position, rotation, moveSpeed }) => {
   const mesh = useRef();
+  //this useFrame is changing the z axis (forward and backwards) of the wall if moveSpeed has changed, which is set in App when you press the up or down arrow
   useFrame((state, delta) => {
     mesh.current.position.z += moveSpeed * delta;
   });
@@ -123,7 +135,7 @@ const App = () => {
   const [jump, setJump] = useState(0);
 
   
-
+  //this handleKeyDown and handleKeyUp is the functions triggered when its listening for the keys and then changing the moveSpeed and cubePosition props to move stuff about
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.code === "ArrowUp") {
@@ -151,6 +163,8 @@ const App = () => {
       }
     };
 
+    //this is what is actually listening for the key changes
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
@@ -177,7 +191,6 @@ const App = () => {
       <ambientLight/>
       <pointLight castShadow position={[10, 10, 10]}  />
       <Background />
-      {/* <Character position={[1.2,0,0]}/> */}
       <Box castShadow position={[1.2, 0, 0]} cubePosition={cubePosition} jump={jump} />
       <Ground receiveShadow moveSpeed={moveSpeed} />
       <Wall
