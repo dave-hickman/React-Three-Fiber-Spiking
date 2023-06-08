@@ -3,11 +3,12 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { TextureLoader, RepeatWrapping, PerspectiveCamera } from "three";
 import kingImg from "../public/King.glb";
 import { useGLTF, Stage, useAnimations } from "@react-three/drei";
+import { Physics, usePlane, useBox } from '@react-three/cannon'
 
 
-function Box({ cubePosition, jump }) {
+function Box(props) {
   // this part uses useRef to make an object of loads of data about the box, like its current position and stuff
-  const mesh = useRef();
+  const [ref] = useBox(() => ({ mass: 1, position: [0, 5, 0], ...props, args:[1,1,1] }))
   // this bit sets the box to start at the co-ordinates 0,0,0 when the window opens
   const [position, setPosition] = useState([0, 0, 0]);
 
@@ -16,38 +17,55 @@ function Box({ cubePosition, jump }) {
 
   useFrame((state, delta) => {
     //this part is basically saying if the character is below a certain height let it jump, or if its over 0.7 on the y axis start pushing it down (its accessing the mesh object we made above to get its co-ordinates and then change them)
-    if (mesh.current.position.y < .7){
-    mesh.current.position.y += jump * delta}
-    if (mesh.current.position.y >= .7){
-      mesh.current.position.y -= 0.01 + (1*delta)}
+    if (ref.current.position.y < .7){
+    ref.current.position.y += props.jump * delta}
+    if (ref.current.position.y >= .7){
+      ref.current.position.y -= 0.01 + (1*delta)}
 
     //this one is what gets the character to stand on the ground, it basically pushes the character down until its at -0.5 on the Y axis
-    if (mesh.current.position.y > -0.5) {
-      mesh.current.position.y -= 0.01 + (1*delta);
+    if (ref.current.position.y > -0.5) {
+      ref.current.position.y -= 0.01 + (1*delta);
     }
 
     //the below is what is stopping it going too far left or right (it starts pushing the box's X axis back when it gets to -4.5 or 4.5)
-    if (mesh.current.position.x < 4.5) {
-      mesh.current.position.x += cubePosition * delta;
+    if (ref.current.position.x < 4.5) {
+      ref.current.position.x += props.cubePosition * delta;
     }
-    if (mesh.current.position.x > 4.5) {
-      mesh.current.position.x += -1 * delta;
+    if (ref.current.position.x > 4.5) {
+      ref.current.position.x += -1 * delta;
     }
-    if (mesh.current.position.x > -4.5) {
-      mesh.current.position.x += cubePosition * delta;
+    if (ref.current.position.x > -4.5) {
+      ref.current.position.x += props.cubePosition * delta;
     }
-    if (mesh.current.position.x < -4.5) {
-      mesh.current.position.x += 1 * delta;
+    if (ref.current.position.x < -4.5) {
+      ref.current.position.x += 1 * delta;
     }
     
   });
 
   return (
-    <mesh ref={mesh} position={position}>
+    <mesh ref={ref} position={position}>
       <Character />
     </mesh>
   );
 }
+
+function Cube({props}) {
+  const [ref] = useBox(() => ({ mass: 1, position: [0, 5, 0], ...props, args:[1,1,1] }))
+
+  //this useFrame is changing the z axis (forward and backwards) of the ground if moveSpeed has changed, which is set in App when you press the up or down arrow
+
+  useFrame((state, delta) => {
+    ref.current.position.z += props.moveSpeed * delta;
+  });
+  return (
+    <mesh ref={ref} position={[0, 0, -40]}>
+      <boxGeometry args={[2, 2, 2]} />
+      <meshStandardMaterial color="yellow" />
+    </mesh>
+  );
+}
+
 
 function Character() {
   const king = useGLTF(kingImg);
@@ -85,13 +103,13 @@ const Background = () => {
   );
 };
 
-const Ground = ({ moveSpeed }) => {
-  const mesh = useRef();
-
+const Ground = (props) => {
+  // const mesh = useRef();
+  const [ref] = usePlane(() => ({ rotation: [-Math.PI / 2, 0, 0], ...props }))
   //this useFrame is changing the z axis (forward and backwards) of the ground if moveSpeed has changed, which is set in App when you press the up or down arrow
 
   useFrame((state, delta) => {
-    mesh.current.position.z += moveSpeed * delta;
+    ref.current.position.z += props.moveSpeed * delta;
   });
 
 
@@ -103,7 +121,7 @@ const Ground = ({ moveSpeed }) => {
 
   return (
     <mesh
-      ref={mesh}
+      ref={ref}
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, -1, 0]}
     >
@@ -176,6 +194,7 @@ const App = () => {
 
   return (
     <Canvas
+    // onKeyDown={(e) => {handleKeyDown(e)}}
       shadows
       camera={{ position: [0, 3, 5], fov: 75 }}
       style={{ height: "70vh", width: "100%" }}
@@ -191,8 +210,13 @@ const App = () => {
       <ambientLight/>
       <pointLight castShadow position={[10, 10, 10]}  />
       <Background />
+     
+      <Physics>
+      <Cube moveSpeed={moveSpeed} />
       <Box castShadow position={[1.2, 0, 0]} cubePosition={cubePosition} jump={jump} />
       <Ground receiveShadow moveSpeed={moveSpeed} />
+      </Physics>
+      
       <Wall
         position={[5, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
