@@ -2,13 +2,13 @@ import React, { useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { TextureLoader, RepeatWrapping, PerspectiveCamera } from "three";
 import kingImg from "../public/King.glb";
-import { useGLTF, Stage, useAnimations } from "@react-three/drei";
+import { useGLTF, Stage, useAnimations, OrbitControls } from "@react-three/drei";
 import { Physics, usePlane, useBox } from '@react-three/cannon'
 
 
 function King(props) {
   // this part uses useRef to make an object of loads of data about the box, like its current position and stuff
-  const [ref] = useBox(() => ({ mass: 1, position: [0, 5, 0], ...props, args:[1,1,1] }))
+  const [ref] = useBox(() => ({ mass: 10, position: [0, 5, 0], ...props, args:[1,1,1] }))
   // this bit sets the box to start at the co-ordinates 0,0,0 when the window opens
   const [position, setPosition] = useState([0, 0, 0]);
 
@@ -51,16 +51,15 @@ function King(props) {
 }
 
 function Cube(props) {
-  const [ref] = useBox(() => ({ mass: 1, ...props, args:[1,1,1] }))
+  const [ref, api] = useBox(() => ({ mass: 20, ...props, args:[1,1,1] }))
 
   //this useFrame is changing the z axis (forward and backwards) of the ground if moveSpeed has changed, which is set in App when you press the up or down arrow
 
   useFrame((state, delta) => {
     ref.current.position.z += props.moveSpeed * delta;
-    console.log(ref.current.position.z)
   });
   return (
-    <mesh ref={ref} position={props.position} >
+    <mesh ref={ref} position={props.position} onKeyDown={() => api.velocity.set(0,0,5)} >
       <boxGeometry args={[2, 2, 2]} />
       <meshStandardMaterial color="yellow" />
     </mesh>
@@ -106,7 +105,7 @@ const Background = () => {
 
 const Ground = (props) => {
   // const mesh = useRef();
-  const [ref] = usePlane(() => ({ rotation: [-Math.PI / 2, 0, 0], ...props }))
+  const [ref] = usePlane(() => ({ mass: 0, rotation: [-Math.PI / 2, 0, 0], ...props }))
   //this useFrame is changing the z axis (forward and backwards) of the ground if moveSpeed has changed, which is set in App when you press the up or down arrow
 
   useFrame((state, delta) => {
@@ -133,12 +132,11 @@ const Ground = (props) => {
 };
 
 const Wall = (props) => {
-  const [ref] = useBox(() => ({ mass: 1, ...props, args:[1,1,1] }))
+  const [ref] = useBox(() => ({ mass: 20, ...props, args:[1,1,1] }))
   //this useFrame is changing the z axis (forward and backwards) of the wall if moveSpeed has changed, which is set in App when you press the up or down arrow
   useFrame((state, delta) => {
     ref.current.position.z += props.moveSpeed * delta;
   });
-
 
   return (
     <mesh ref={ref} position={props.position} rotation={props.rotation}>
@@ -147,6 +145,27 @@ const Wall = (props) => {
     </mesh>
   );
 };
+
+const Path = (props) => {
+  // const mesh = useRef();
+  const [ref] = usePlane(() => ({ mass: 0, rotation: [-Math.PI / 2, 0, 0], ...props }))
+  //this useFrame is changing the z axis (forward and backwards) of the ground if moveSpeed has changed, which is set in App when you press the up or down arrow
+
+  useFrame((state, delta) => {
+    ref.current.position.z += props.moveSpeed * delta;
+  });
+
+  return (
+    <mesh
+      ref={ref}
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 2, 0]}
+    >
+      <planeGeometry args={[10, 1000]} />
+      <meshStandardMaterial color="grey" />
+    </mesh>
+  );
+}
 
 const App = () => {
   const [moveSpeed, setMoveSpeed] = useState(0);
@@ -157,8 +176,10 @@ const App = () => {
   //this handleKeyDown and handleKeyUp is the functions triggered when its listening for the keys and then changing the moveSpeed and cubePosition props to move stuff about
   useEffect(() => {
     const handleKeyDown = (event) => {
+      
       if (event.code === "ArrowUp") {
         setMoveSpeed(20);
+        
       } else if (event.code === "ArrowDown") {
         setMoveSpeed(-20);
       } else if (event.code === "ArrowLeft") {
@@ -198,7 +219,8 @@ const App = () => {
     // onKeyDown={(e) => {handleKeyDown(e)}}
       shadows
       camera={{ position: [0, 3, 5], fov: 75 }}
-      style={{ height: "70vh", width: "100%" }}
+      style={{ height: "70vh", width: "100%", backgroundColor:"blue" }}
+      
     >
       {/* <PerspectiveCamera
         makeDefault
@@ -209,30 +231,32 @@ const App = () => {
         far={1000}
       ></PerspectiveCamera> */}
       <ambientLight/>
+      <OrbitControls/>
       <pointLight castShadow position={[10, 10, 10]}  />
-      <Background />
+      {/* <Background /> */}
      
       <Physics>
       <Cube moveSpeed={moveSpeed} position={[0,0,-40]} />
-      <King castShadow position={[1.2, 0, 0]} cubePosition={cubePosition} jump={jump} />
-      <Ground receiveShadow moveSpeed={moveSpeed} />
+      <King castShadow position={[0, 0, 0]} cubePosition={cubePosition} jump={jump} />
+      <Path receiveShadow moveSpeed={moveSpeed} />
+      {/* <Ground receiveShadow moveSpeed={moveSpeed} /> */}
       
-      <Wall
+      {/* <Wall
         position={[5, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
         moveSpeed={moveSpeed}
         />
-        </Physics>
       <Wall
         position={[-5, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
         moveSpeed={moveSpeed}
-      />
-      <Wall
+        /> */}
+      {/* <Wall
         position={[0, 0, -60]}
         rotation={[0, 0, 0]}
         moveSpeed={moveSpeed}
-      />
+        /> */}
+        </Physics>
     </Canvas>
   );
 };
