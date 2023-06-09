@@ -6,7 +6,7 @@ import { useGLTF, Stage, useAnimations } from "@react-three/drei";
 import { Physics, usePlane, useBox } from '@react-three/cannon'
 
 
-function Box(props) {
+function King(props) {
   // this part uses useRef to make an object of loads of data about the box, like its current position and stuff
   const [ref] = useBox(() => ({ mass: 1, position: [0, 5, 0], ...props, args:[1,1,1] }))
   // this bit sets the box to start at the co-ordinates 0,0,0 when the window opens
@@ -50,16 +50,17 @@ function Box(props) {
   );
 }
 
-function Cube({props}) {
-  const [ref] = useBox(() => ({ mass: 1, position: [0, 5, 0], ...props, args:[1,1,1] }))
+function Cube(props) {
+  const [ref] = useBox(() => ({ mass: 1, ...props, args:[1,1,1] }))
 
   //this useFrame is changing the z axis (forward and backwards) of the ground if moveSpeed has changed, which is set in App when you press the up or down arrow
 
   useFrame((state, delta) => {
     ref.current.position.z += props.moveSpeed * delta;
+    console.log(ref.current.position.z)
   });
   return (
-    <mesh ref={ref} position={[0, 0, -40]}>
+    <mesh ref={ref} position={props.position} >
       <boxGeometry args={[2, 2, 2]} />
       <meshStandardMaterial color="yellow" />
     </mesh>
@@ -131,16 +132,16 @@ const Ground = (props) => {
   );
 };
 
-const Wall = ({ position, rotation, moveSpeed }) => {
-  const mesh = useRef();
+const Wall = (props) => {
+  const [ref] = useBox(() => ({ mass: 1, ...props, args:[1,1,1] }))
   //this useFrame is changing the z axis (forward and backwards) of the wall if moveSpeed has changed, which is set in App when you press the up or down arrow
   useFrame((state, delta) => {
-    mesh.current.position.z += moveSpeed * delta;
+    ref.current.position.z += props.moveSpeed * delta;
   });
 
 
   return (
-    <mesh ref={mesh} position={position} rotation={rotation}>
+    <mesh ref={ref} position={props.position} rotation={props.rotation}>
       <boxGeometry args={[100, 5, 0.1]} />
       <meshStandardMaterial color="green"/>
     </mesh>
@@ -212,16 +213,16 @@ const App = () => {
       <Background />
      
       <Physics>
-      <Cube moveSpeed={moveSpeed} />
-      <Box castShadow position={[1.2, 0, 0]} cubePosition={cubePosition} jump={jump} />
+      <Cube moveSpeed={moveSpeed} position={[0,0,-40]} />
+      <King castShadow position={[1.2, 0, 0]} cubePosition={cubePosition} jump={jump} />
       <Ground receiveShadow moveSpeed={moveSpeed} />
-      </Physics>
       
       <Wall
         position={[5, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
         moveSpeed={moveSpeed}
-      />
+        />
+        </Physics>
       <Wall
         position={[-5, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
